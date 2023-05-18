@@ -1,5 +1,12 @@
 package Controller;
 
+//import java.sql.Connection;
+import java.sql.SQLException;
+
+import Model.Account;
+import Service.RegistrationService;
+import Service.*;
+import Util.ConnectionUtil;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 
@@ -16,8 +23,9 @@ public class SocialMediaController {
      */
     public Javalin startAPI() {
         Javalin app = Javalin.create();
-        app.get("example-endpoint", this::exampleHandler);
-
+        app.post("/register", this::registerHandler);
+        app.post("/login", this::loginHandler);
+       
         return app;
     }
 
@@ -25,9 +33,43 @@ public class SocialMediaController {
      * This is an example handler for an example endpoint.
      * @param context The Javalin Context object manages information about both the HTTP request and response.
      */
-    private void exampleHandler(Context context) {
-        context.json("sample text");
+    private void registerHandler(Context context) throws SQLException {
+        try {        
+            Account account = context.bodyAsClass(Account.class);        
+            String username = account.getUsername();
+            String password = account.getPassword();
+            if (username.isBlank() || password.length() < 4) {
+                context.status(400);
+                return;
+            }
+    
+            
+            RegistrationService registrationService = new RegistrationService(ConnectionUtil.getConnection());
+            Account registeredAccount = registrationService.registerAccount(account);
+    
+            
+            context.status(200).json(registeredAccount);
+        } catch (SQLException e) {
+            context.status(500).json("Failed to register account: " + e.getMessage());
+        } catch (IllegalArgumentException e) {
+            context.result("").status(400);
+        
     }
-
-
+    }
+    public void loginHandler (Context context) throws SQLException {
+        try {          
+        Account account = context.bodyAsClass(Account.class);
+        LoginService loginService = new LoginService(ConnectionUtil.getConnection());
+        Account authenticatedAccount = loginService.authenticate(account.getUsername(), account.getPassword());
+        
+        if (authenticatedAccount != null) {
+            context.status(200).json(authenticatedAccount);
+        } else {
+            context.status(401);
+        }
+    } catch (IllegalArgumentException e) {
+        context.status(400);
+    }
 }
+}
+
