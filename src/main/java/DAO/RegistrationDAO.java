@@ -28,7 +28,8 @@ public class RegistrationDAO {
         statement.setString(1, username);
         statement.setString(2, password);
         statement.executeUpdate();
-statement = connection.prepareStatement("SELECT account_id FROM account WHERE username = ?");
+        
+        statement = connection.prepareStatement("SELECT account_id FROM account WHERE username = ?");
         statement.setString(1, username);
         result = statement.executeQuery();
         result.next();

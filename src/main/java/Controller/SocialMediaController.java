@@ -2,6 +2,7 @@ package Controller;
 
 //import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.List;
 
 import Model.Account;
 import Model.Message;
@@ -26,8 +27,12 @@ public class SocialMediaController {
         Javalin app = Javalin.create();
         app.post("/register", this::registerHandler);
         app.post("/login", this::loginHandler);
-        app.post("/messages", this::messagesHandler);
-        app.get("/messages/{message_id}", this::getmessagesHandler);
+        app.post("/messages", this::postmessagesHandler);
+        app.get("/messages", this::getAllmessagesHandler);
+        app.get("/messages/{message_id}", this::getmessagebyIDHandler);
+        app.get("accounts/{account_id}/messages", this::getAllmessagesByUserHandler);
+        app.patch("/messages/{message_id}",this::updatemessageHandler);
+        app.delete("/messages/{message_id}",this::deletemessageHandler);
        
         return app;
     }
@@ -75,7 +80,7 @@ public class SocialMediaController {
         }
     }
 
-    public void messagesHandler (Context context) throws SQLException {
+    public void postmessagesHandler (Context context) throws SQLException {
         try {          
             Message message = context.bodyAsClass(Message.class);
             if (message.getMessage_text().length() > 254) {
@@ -98,5 +103,80 @@ public class SocialMediaController {
             context.status(400);
         }
     }
-}
+    public void getAllmessagesHandler (Context context) {
+        try {          
+            MessageService messageService = new MessageService(ConnectionUtil.getConnection());
+            List<Message> messages = messageService.GetAllMessages();
+            context.json(messages).status(200);
+            } catch (IllegalArgumentException e) {
+            context.status(400);
+        }
+    }
+    public void getmessagebyIDHandler (Context context) throws SQLException {
+        try {          
+            String strmessage_id = context.pathParam("message_id");
+            int message_id = Integer.valueOf(strmessage_id);
+            MessageService messageService = new MessageService(ConnectionUtil.getConnection());
+            Message newMesage = messageService.GetMessageByID(message_id);
+        
+            if (newMesage != null) {
+                context.status(200).json(newMesage);
+            } else {
+                context.status(200);
+            }
+            } catch (IllegalArgumentException e) {
+            context.status(400);
+        }
+    }
+    public void getAllmessagesByUserHandler (Context context) {
+        try {  
+            String straccount_id = context.pathParam("account_id");
+            int account_id = Integer.valueOf(straccount_id);        
+            MessageService messageService = new MessageService(ConnectionUtil.getConnection());
+            List<Message> messages = messageService.GetAllMessagesByUser(account_id);
+           context.json(messages).status(200);
+            } catch (IllegalArgumentException e) {
+            context.status(400);
+            }
+    }
+    
+    private void updatemessageHandler (Context context) {
+        int messageId = Integer.parseInt(context.pathParam("message_id"));
+        Message message = context.bodyAsClass(Message.class);
+        if (message.getMessage_text().length() > 254) {
+            context.status(400);
+        }
+        else if (message.getMessage_text() == "") { 
+            context.status(400);
+        }
+        else {
+            String newMessageText = message.getMessage_text();
+            MessageService messageService = new MessageService(ConnectionUtil.getConnection());
+            boolean updateSuccessful = messageService.UpdateMessageText(messageId, newMessageText);
+            if (updateSuccessful) {
+                Message updatedMessage = messageService.GetMessageByID(messageId);
+                context.json(updatedMessage);
+                context.status(200);
+            } else {
+                context.status(400);
+            }
+        }
+    }
+    public void deletemessageHandler (Context context) throws SQLException {
+        try {          
+            String strmessage_id = context.pathParam("message_id");
+            int message_id = Integer.valueOf(strmessage_id);
+            MessageService messageService = new MessageService(ConnectionUtil.getConnection());
+            Message Mesagedeleted = messageService.DeleteMessage(message_id);
+            if (Mesagedeleted != null) {
+                context.status(200).json(Mesagedeleted);
+            } else {
+                context.status(200);
+            }
+            } catch (IllegalArgumentException e) {
+            context.status(400);
+            }
+        }
+    }
+
 
