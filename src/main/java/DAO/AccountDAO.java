@@ -13,7 +13,7 @@ public class AccountDAO {
 
     public AccountDAO(Connection connection) {
         this.connection = connection;
-    }
+    } 
 
     public Account findByUsernamePassword(String username, String password) {
         String sql = "SELECT account_id FROM account WHERE username = ? AND password = ?";

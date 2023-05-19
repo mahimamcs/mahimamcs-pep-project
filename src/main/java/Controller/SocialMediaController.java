@@ -128,6 +128,7 @@ public class SocialMediaController {
             context.status(400);
         }
     }
+
     public void getAllmessagesByUserHandler (Context context) {
         try {  
             String straccount_id = context.pathParam("account_id");
