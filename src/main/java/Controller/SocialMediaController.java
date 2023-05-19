@@ -4,6 +4,7 @@ package Controller;
 import java.sql.SQLException;
 
 import Model.Account;
+import Model.Message;
 import Service.RegistrationService;
 import Service.*;
 import Util.ConnectionUtil;
@@ -25,6 +26,8 @@ public class SocialMediaController {
         Javalin app = Javalin.create();
         app.post("/register", this::registerHandler);
         app.post("/login", this::loginHandler);
+        app.post("/messages", this::messagesHandler);
+        app.get("/messages/{message_id}", this::getmessagesHandler);
        
         return app;
     }
@@ -67,9 +70,33 @@ public class SocialMediaController {
         } else {
             context.status(401);
         }
-    } catch (IllegalArgumentException e) {
-        context.status(400);
+        } catch (IllegalArgumentException e) {
+            context.status(400);
+        }
     }
-}
+
+    public void messagesHandler (Context context) throws SQLException {
+        try {          
+            Message message = context.bodyAsClass(Message.class);
+            if (message.getMessage_text().length() > 254) {
+                context.status(400);
+            }
+            else if (message.getMessage_text() == "") { 
+                context.status(400);
+            }
+            else {
+                MessageService messageService = new MessageService(ConnectionUtil.getConnection());
+                Message newMesage = messageService.NewMessage(message);
+        
+                if (newMesage != null) {
+                    context.status(200).json(newMesage);
+                } else {
+                    context.status(400);
+                }
+            }
+        } catch (IllegalArgumentException e) {
+            context.status(400);
+        }
+    }
 }
 
